@@ -1,0 +1,85 @@
+{
+  "agent": {
+    "webSocket": {
+      "host": "127.0.0.1",
+      "port": 8787,
+      "allowedOrigins": [
+        "http://localhost:3000",
+        "https://localhost:3000"
+      ]
+    }
+  },
+  "brands": [
+    {
+      "brand": "Firefly",
+      "vendorName": "Infoxelle Co., Ltd.",
+      "series": [
+        {
+          "series": "DE Wired Series",
+          "connection": "USB",
+          "devices": [
+            {
+              "model": "DE334T",
+              "productString": "Trichoscope 4K",
+              "vid": "0x21CD",
+              "pid": "0x0834",
+              "maxResolution": "3840x2160",
+              "enabled": true,
+              "capabilities": {
+                "button": { "method": "uvc-still-trigger", "endpoint": "0x87", "pressPayload": "02010001" }
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "brand": "Generic",
+      "vendorName": "Genesys Logic, Inc.",
+      "series": [
+        {
+          "series": "USB 2.0 Camera",
+          "connection": "USB",
+          "devices": [
+            {
+              "model": "USB2.0-Camera-05E3F12B",
+              "productString": "USB 2.0 Camera",
+              "vid": "0x05E3",
+              "pid": "0xF12B",
+              "maxResolution": "640x480",
+              "enabled": true,
+              "_comment": "Status interrupt endpoint is 0x81 for this device. pressPayload is a best-guess (standard UVC VideoStreaming button event) — verify by sniffing while pressing the button.",
+              "capabilities": {
+                "button": { "method": "uvc-still-trigger", "endpoint": "0x81", "pressPayload": "02010001" }
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "brand": "Sonix",
+      "vendorName": "Sonix Technology Co., Ltd.",
+      "series": [
+        {
+          "series": "USB 2.0 Camera",
+          "connection": "USB",
+          "devices": [
+            {
+              "model": "Sonix-USB2.0-Camera-AB02AB01",
+              "productString": "USB 2.0 Camera",
+              "vid": "0xAB02",
+              "pid": "0xAB01",
+              "maxResolution": "2592x1944",
+              "enabled": false,
+              "_comment": "UNSUPPORTED for now. Two clean USBPcap captures (5+ button presses each, camera streaming) showed ZERO interrupt traffic on 0x83 and no button data on the bus. Descriptor advertises bTriggerUsage=1 (host-side notification), so the device only emits the button event after an app arms the still-capture pin — plain preview streaming (getUserMedia) never arms it, so our passive out-of-band tap can't see it. Re-enable only after a vendor-app sniff confirms the real endpoint/payload, or after determining the button routes through one of its Extension Units ({28F03370-6311-4A2E-BA2C-6890EB334016} / {BD5321B4-D635-CA45-B203-4E0149B301BC}). endpoint/pressPayload below are unverified best-guesses.",
+              "capabilities": {
+                "button": { "method": "uvc-still-trigger", "endpoint": "0x83", "pressPayload": "02010001" }
+              }
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

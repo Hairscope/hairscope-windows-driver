@@ -1,0 +1,26 @@
+# .NET build output
+bin/
+obj/
+[Dd]ebug/
+[Rr]elease/
+x86/
+x64/
+*.user
+*.suo
+
+# Publish output
+publish/
+*.zip
+
+# Installer (build tooling + bundled third-party binaries)
+installer/
+
+# Rider / VS
+.vs/
+.idea/
+
+# Logs
+*.log
+
+# Archives / backups
+*.rar
