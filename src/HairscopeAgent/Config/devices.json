@@ -5,7 +5,8 @@
       "port": 8787,
       "allowedOrigins": [
         "http://localhost:3000",
-        "https://localhost:3000"
+        "https://localhost:3000",
+        "https://*.hairscope.ai"
       ]
     }
   },

@@ -9,9 +9,29 @@ public sealed class AgentConfig
     [JsonPropertyName("agent")] public AgentSettings Agent { get; set; } = new();
     [JsonPropertyName("brands")] public List<Brand> Brands { get; set; } = new();
 
-    public static AgentConfig Load(string path)
+    /// <summary>
+    /// Load the configuration compiled into the assembly as an embedded resource.
+    /// This is the authoritative source — there is no loose plaintext config file on
+    /// disk to read, expose, or tamper with.
+    /// </summary>
+    public static AgentConfig LoadEmbedded()
     {
-        var json = File.ReadAllText(path);
+        var asm = typeof(AgentConfig).Assembly;
+        var resourceName = asm.GetManifestResourceNames()
+            .FirstOrDefault(n => n.EndsWith("devices.json", StringComparison.OrdinalIgnoreCase))
+            ?? throw new InvalidOperationException("Embedded devices.json resource not found.");
+
+        using var stream = asm.GetManifestResourceStream(resourceName)
+            ?? throw new InvalidOperationException("Embedded devices.json stream could not be opened.");
+        using var reader = new StreamReader(stream);
+        return Parse(reader.ReadToEnd());
+    }
+
+    /// <summary>Load configuration from an external file (dev/testing only).</summary>
+    public static AgentConfig Load(string path) => Parse(File.ReadAllText(path));
+
+    private static AgentConfig Parse(string json)
+    {
         var options = new JsonSerializerOptions
         {
             PropertyNameCaseInsensitive = true,

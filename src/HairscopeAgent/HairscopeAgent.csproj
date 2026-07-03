@@ -8,6 +8,7 @@
     <AssemblyName>HairscopeAgent</AssemblyName>
     <RootNamespace>Hairscope.Agent</RootNamespace>
     <InvariantGlobalization>true</InvariantGlobalization>
+    <ApplicationIcon>app.ico</ApplicationIcon>
   </PropertyGroup>
 
   <ItemGroup>
@@ -19,9 +20,10 @@
   </ItemGroup>
 
   <ItemGroup>
-    <None Update="Config\devices.json">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </None>
+    <!-- Config is compiled INTO the binary as an embedded resource (not shipped as a
+         loose, user-editable plaintext file). This keeps the security-sensitive origin
+         allowlist and the device catalog out of the installed file tree. -->
+    <EmbeddedResource Include="Config\devices.json" />
   </ItemGroup>
 
 </Project>

@@ -48,8 +48,9 @@ public sealed class AgentWorker : BackgroundService
         var config = new AgentConfig();
         try
         {
-            var path = Path.Combine(AppContext.BaseDirectory, "Config", "devices.json");
-            config = AgentConfig.Load(path);
+            // Config is compiled into the binary (embedded resource) — no loose,
+            // user-editable devices.json is shipped on disk.
+            config = AgentConfig.LoadEmbedded();
 
             _signatures.Clear();
             foreach (var (brand, series, device) in config.AllDevices())

@@ -94,7 +94,33 @@ public sealed class SnapWebSocketServer : IAsyncDisposable
     {
         if (_allowedOrigins.Count == 0) return true; // dev: allow any
         if (string.IsNullOrEmpty(origin)) return false;
-        return _allowedOrigins.Contains(origin);
+        if (_allowedOrigins.Contains(origin)) return true;
+        // Support wildcard entries like "https://*.hairscope.ai" (matches any subdomain,
+        // same scheme, no path/port smuggling).
+        foreach (var allowed in _allowedOrigins)
+        {
+            if (MatchesWildcardOrigin(allowed, origin)) return true;
+        }
+        return false;
+    }
+
+    private static bool MatchesWildcardOrigin(string pattern, string origin)
+    {
+        var marker = pattern.IndexOf("://*.", StringComparison.Ordinal);
+        if (marker < 0) return false;
+
+        var scheme = pattern.Substring(0, marker + 3);      // e.g. "https://"
+        var baseDomain = pattern.Substring(marker + 5);     // e.g. "hairscope.ai"
+        if (baseDomain.Length == 0) return false;
+        if (!origin.StartsWith(scheme, StringComparison.OrdinalIgnoreCase)) return false;
+
+        var host = origin.Substring(scheme.Length);
+        // Origin is scheme://host[:port] with no path — reject anything with a path or port.
+        if (host.Contains('/') || host.Contains(':')) return false;
+
+        // Must be a real subdomain of the base domain (a non-empty label before it).
+        return host.EndsWith("." + baseDomain, StringComparison.OrdinalIgnoreCase)
+            && host.Length > baseDomain.Length + 1;
     }
 
     private async Task HandleClient(HttpListenerContext ctx, CancellationToken token)
