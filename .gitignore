@@ -12,8 +12,10 @@ x64/
 publish/
 *.zip
 
-# Installer (build tooling + bundled third-party binaries)
-installer/
+# Installer: track source (.iss, scripts, brand assets); ignore build output
+# and bundled third-party redistributables.
+installer/Output/
+installer/deps/
 
 # Rider / VS
 .vs/
