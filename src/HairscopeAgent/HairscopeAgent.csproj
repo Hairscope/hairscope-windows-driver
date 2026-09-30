@@ -16,6 +16,15 @@
     <Company>Hairscope</Company>
     <Product>Hairscope Agent</Product>
     <Description>Detects the trichoscopy probe hardware button and relays it to the Hairscope web app.</Description>
+    <Copyright>Copyright © Hairscope 2024</Copyright>
+    <Authors>Hairscope</Authors>
+    <PackageLicenseExpression>MIT</PackageLicenseExpression>
+    <PackageProjectUrl>https://github.com/hairscope/hairscope-windows-driver</PackageProjectUrl>
+    <RepositoryUrl>https://github.com/hairscope/hairscope-windows-driver</RepositoryUrl>
+    <RepositoryType>git</RepositoryType>
+    <!-- Enable deterministic builds for reproducible signatures -->
+    <Deterministic>true</Deterministic>
+    <ContinuousIntegrationBuild>true</ContinuousIntegrationBuild>
   </PropertyGroup>
 
   <ItemGroup>

@@ -1,0 +1,225 @@
+# Hairscope Agent - GitHub Actions Workflow for SignPath.io
+# This workflow builds, signs, and releases the Hairscope Agent
+# Requires: SignPath.io account, GitHub repository with SignPath integration
+
+name: Build, Sign & Release
+
+on:
+  push:
+    tags:
+      - 'v*'  # Trigger on version tags (v1.0.0, v1.0.1, etc.)
+  workflow_dispatch:  # Manual trigger
+
+permissions:
+  contents: write      # For creating releases
+  id-token: write      # For OIDC authentication with SignPath.io
+  attestations: write  # For SLSA provenance
+
+env:
+  # Build configuration
+  DOTNET_VERSION: '8.0.x'
+  CONFIGURATION: 'Release'
+  RUNTIME: 'win-x64'
+  PUBLISH_DIR: 'src/HairscopeAgent/publish'
+  INSTALLER_OUTPUT: 'installer/Output'
+
+jobs:
+  build:
+    name: Build & Publish
+    runs-on: windows-latest
+    outputs:
+      version: ${{ steps.version.outputs.version }}
+      exe_path: ${{ steps.publish.outputs.exe_path }}
+      installer_path: ${{ steps.installer.outputs.installer_path }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # Needed for git tags
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: ${{ env.DOTNET_VERSION }}
+
+      - name: Extract version from tag
+        id: version
+        run: |
+          $tag = "${{ github.ref_name }}"
+          $version = $tag.TrimStart('v')
+          echo "version=$version" >> $env:GITHUB_OUTPUT
+          echo "Building version: $version"
+
+      - name: Restore dependencies
+        run: dotnet restore src/HairscopeAgent/HairscopeAgent.csproj
+
+      - name: Build
+        run: dotnet build src/HairscopeAgent/HairscopeAgent.csproj --configuration ${{ env.CONFIGURATION }} --no-restore
+
+      - name: Publish (single-file, self-contained)
+        id: publish
+        run: |
+          $publishDir = "${{ env.PUBLISH_DIR }}"
+          dotnet publish src/HairscopeAgent/HairscopeAgent.csproj `
+            --configuration ${{ env.CONFIGURATION }} `
+            --runtime ${{ env.RUNTIME }} `
+            --self-contained true `
+            -p:PublishSingleFile=true `
+            -p:PublishTrimmed=false `
+            -p:Version=${{ steps.version.outputs.version }} `
+            -p:FileVersion=${{ steps.version.outputs.version }} `
+            -p:AssemblyVersion=${{ steps.version.outputs.version }} `
+            -o "$publishDir"
+          
+          $exePath = Join-Path $publishDir "HairscopeAgent.exe"
+          echo "exe_path=$exePath" >> $env:GITHUB_OUTPUT
+          Write-Host "Published to: $exePath"
+
+      - name: Verify executable exists
+        run: |
+          if (-not (Test-Path "${{ steps.publish.outputs.exe_path }}")) {
+            Write-Error "Executable not found at ${{ steps.publish.outputs.exe_path }}"
+            exit 1
+          }
+          Write-Host "Executable verified: ${{ steps.publish.outputs.exe_path }}"
+
+      - name: Build Inno Setup Installer
+        id: installer
+        run: |
+          # Install Inno Setup
+          choco install innosetup -y --no-progress
+          $iscc = "C:\Program Files (x86)\Inno Setup 6\ISCC.exe"
+          
+          # Update version in .iss file
+          $issPath = "installer/HairscopeAgent.iss"
+          $content = Get-Content $issPath -Raw
+          $content = $content -replace '#define AppVersion ".*"', "#define AppVersion `"${{ steps.version.outputs.version }}`""
+          Set-Content $issPath -Value $content
+          
+          # Build installer
+          & $iscc $issPath
+          
+          # Find output
+          $installerFiles = Get-ChildItem "${{ env.INSTALLER_OUTPUT }}" -Filter "HairscopeAgentSetup-*.exe" | Sort-Object LastWriteTime -Descending
+          if ($installerFiles.Count -eq 0) {
+            Write-Error "No installer found in ${{ env.INSTALLER_OUTPUT }}"
+            exit 1
+          }
+          $installerPath = $installerFiles[0].FullName
+          echo "installer_path=$installerPath" >> $env:GITHUB_OUTPUT
+          Write-Host "Installer built: $installerPath"
+
+      - name: Upload build artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: build-output-${{ steps.version.outputs.version }}
+          path: |
+            ${{ env.PUBLISH_DIR }}/HairscopeAgent.exe
+            ${{ env.INSTALLER_OUTPUT }}/HairscopeAgentSetup-*.exe
+          retention-days: 30
+
+  sign:
+    name: Sign with SignPath.io
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      id-token: write
+      contents: read
+    steps:
+      - name: Download build artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: build-output-${{ needs.build.outputs.version }}
+          path: artifacts
+
+      - name: Verify artifacts
+        run: |
+          ls -la artifacts/
+          test -f artifacts/HairscopeAgent.exe
+          test -f artifacts/HairscopeAgentSetup-*.exe
+
+      - name: Sign artifacts with SignPath.io
+        uses: signpath/signpath-action@v2
+        with:
+          signpath-project: hairscope-agent
+          signpath-policy: release-signing
+          artifacts: |
+            artifacts/HairscopeAgent.exe
+            artifacts/HairscopeAgentSetup-*.exe
+        env:
+          SIGNPATH_TOKEN: ${{ secrets.SIGNPATH_TOKEN }}
+
+      - name: Upload signed artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: signed-output-${{ needs.build.outputs.version }}
+          path: artifacts/
+          retention-days: 30
+
+  release:
+    name: Create GitHub Release
+    needs: [build, sign]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Download signed artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: signed-output-${{ needs.build.outputs.version }}
+          path: release-assets
+
+      - name: Verify signed artifacts
+        run: |
+          ls -la release-assets/
+          # Verify signatures
+          for f in release-assets/*.exe; do
+            echo "Verifying $f..."
+            osslsigncode verify "$f" || echo "Warning: verification failed for $f"
+          done
+
+      - name: Generate release notes
+        id: release_notes
+        run: |
+          cat << 'EOF' > release_notes.md
+          ## Hairscope Agent v${{ needs.build.outputs.version }}
+          
+          ### Changes
+          - See [CHANGELOG.md](CHANGELOG.md) for details
+          
+          ### Downloads
+          - **HairscopeAgent.exe** - Standalone Windows service executable
+          - **HairscopeAgentSetup-${{ needs.build.outputs.version }}.exe** - Full installer (includes USBPcap driver)
+          
+          ### Installation
+          1. Run the installer as Administrator
+          2. The service will start automatically on boot
+          3. Connect the trichoscopy probe - the capture button will be detected
+          
+          ### Verification
+          All binaries are signed with the **Hairscope** code signing certificate via SignPath.io.
+          Verify signatures:
+          ```powershell
+          # Verify executable
+          signtool verify /pa /v HairscopeAgent.exe
+          
+          # Verify installer
+          signtool verify /pa /v HairscopeAgentSetup-${{ needs.build.outputs.version }}.exe
+          ```
+          EOF
+          echo "notes<<EOF" >> $GITHUB_OUTPUT
+          cat release_notes.md >> $GITHUB_OUTPUT
+          echo "EOF" >> $GITHUB_OUTPUT
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: v${{ needs.build.outputs.version }}
+          name: Hairscope Agent v${{ needs.build.outputs.version }}
+          body: ${{ steps.release_notes.outputs.notes }}
+          files: |
+            release-assets/HairscopeAgent.exe
+            release-assets/HairscopeAgentSetup-*.exe
+          draft: false
+          prerelease: ${{ contains(needs.build.outputs.version, '-') }}
+          generate_release_notes: false

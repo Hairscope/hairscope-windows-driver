@@ -1,0 +1,70 @@
+# Hairscope Agent - SignPath.io Configuration
+# This file configures automated code signing for the Hairscope Agent project
+# Documentation: https://docs.signpath.io/
+
+# Project identity (matches your SignPath.io project slug)
+project: hairscope-agent
+
+# Artifacts to sign - these are the files produced by your build
+artifacts:
+  # Main executable (single-file publish)
+  - name: HairscopeAgent.exe
+    path: src/HairscopeAgent/publish/HairscopeAgent.exe
+    description: "Hairscope Agent Windows Service Executable"
+    fileType: pe
+
+  # Inno Setup installer
+  - name: HairscopeAgentSetup.exe
+    path: installer/Output/HairscopeAgentSetup-*.exe
+    description: "Hairscope Agent Installer"
+    fileType: pe
+
+# Signing policies - define when and how artifacts are signed
+policies:
+  # Sign all release builds (tagged versions)
+  - name: release-signing
+    description: "Sign release builds for production distribution"
+    artifacts:
+      - HairscopeAgent.exe
+      - HairscopeAgentSetup.exe
+    conditions:
+      - type: gitTag
+        pattern: "v*"  # Matches v1.0.0, v1.0.1, etc.
+    certificate:
+      type: codeSigning
+      subjectName: "Hairscope"
+    timestamp:
+      rfc3161: true
+      url: "http://timestamp.digicert.com"
+
+  # Sign pre-release builds (optional, for testing)
+  - name: prerelease-signing
+    description: "Sign pre-release builds for testing"
+    artifacts:
+      - HairscopeAgent.exe
+      - HairscopeAgentSetup.exe
+    conditions:
+      - type: gitBranch
+        pattern: "main"
+      - type: gitTag
+        pattern: "v*-*"  # Matches v1.0.0-beta, v1.0.0-rc1, etc.
+    certificate:
+      type: codeSigning
+      subjectName: "Hairscope"
+    timestamp:
+      rfc3161: true
+      url: "http://timestamp.digicert.com"
+
+# Verification settings
+verification:
+  # Verify signatures after signing
+  verifySignatures: true
+  # Verify certificate chain
+  verifyCertificateChain: true
+  # Check timestamp validity
+  verifyTimestamp: true
+
+# Notification settings (optional)
+notifications:
+  onSuccess: false
+  onFailure: true

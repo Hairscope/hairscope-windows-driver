@@ -26,3 +26,9 @@ installer/deps/
 
 # Archives / backups
 *.rar
+
+# Code signing - NEVER commit certificates or private keys
+signing/*.pfx
+signing/*.p12
+signing/*.cer
+signing/hairscope-*-code-sign.*

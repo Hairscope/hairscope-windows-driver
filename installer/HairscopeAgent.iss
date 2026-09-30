@@ -9,6 +9,11 @@
 #define AppExeName "HairscopeAgent.exe"
 #define ServiceName "HairscopeAgent"
 
+; Code signing configuration (used by CI/CD via SignPath.io)
+; For local builds, set SIGNTOOL_PATH and CERT_THUMBPRINT environment variables
+; SignTool=signtool
+; SignToolParams=/sha1 $env:CERT_THUMBPRINT /tr http://timestamp.digicert.com /td sha256 /fd sha256 /a $f
+
 [Setup]
 AppId={{B7E2D9A1-5C64-4F0E-9A3D-2E6B1C8F4A70}
 AppName={#AppName}
