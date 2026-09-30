@@ -28,6 +28,13 @@ camera. While the browser streams the probe, the button events flow on `0x87`, t
 agent sees them, and relays a `snap` message to the web app over a localhost
 WebSocket. No camera conflict, no vendor DLL, no bespoke kernel driver.
 
+**Port note:** the WebSocket defaults to `127.0.0.1:8891`. It used to be `8787`,
+but Firefly's own bundled Windows application also binds `8787` on startup, so any
+PC that has both the Firefly software and this agent installed would fail with an
+`HttpListener` "conflicts with an existing registration" error. `8891` was picked
+as an arbitrary port unlikely to collide with either vendor tooling or common dev
+ports (3000/8080/etc.) — there's nothing else significant about the number itself.
+
 ```
 Probe button ─► USB 0x87 status event ─► USBPcap (kernel) ─► HairscopeAgent
                                                                   │  observes; never opens the camera
@@ -84,8 +91,8 @@ Expected output:
 
 ```
 Configured device: Firefly DE Wired Series DE334T (VID_21CD&PID_0834)
-[ws] listening on ws://127.0.0.1:8787/
-[ws] allowed origins: http://localhost:3000, https://localhost:3000
+[ws] listening on ws://127.0.0.1:8891/
+[ws] allowed origins: http://localhost:3000/1/2, https://localhost:3000/1/2
 Agent ready. USB capture starts only while the web app is connected.
 ```
 
@@ -134,7 +141,7 @@ sc start HairscopeAgent
   "agent": {
     "webSocket": {
       "host": "127.0.0.1",
-      "port": 8787,
+      "port": 8891,
       "allowedOrigins": ["http://localhost:3000", "https://localhost:3000"]
     }
   },

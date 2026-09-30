@@ -2,10 +2,20 @@
   "agent": {
     "webSocket": {
       "host": "127.0.0.1",
-      "port": 8787,
+      "port": 8891,
       "allowedOrigins": [
         "http://localhost:3000",
         "https://localhost:3000",
+        "http://localhost:3001",
+        "https://localhost:3001",
+        "http://localhost:3002",
+        "https://localhost:3002",
+        "http://127.0.0.1:3000",
+        "https://127.0.0.1:3000",
+        "http://127.0.0.1:3001",
+        "https://127.0.0.1:3001",
+        "http://127.0.0.1:3002",
+        "https://127.0.0.1:3002",
         "https://*.hairscope.ai"
       ]
     }
@@ -27,7 +37,11 @@
               "maxResolution": "3840x2160",
               "enabled": true,
               "capabilities": {
-                "button": { "method": "uvc-still-trigger", "endpoint": "0x87", "pressPayload": "02010001" }
+                "button": {
+                  "method": "uvc-still-trigger",
+                  "endpoint": "0x87",
+                  "pressPayload": "02010001"
+                }
               }
             }
           ]
@@ -51,7 +65,11 @@
               "enabled": true,
               "_comment": "Status interrupt endpoint is 0x81 for this device. pressPayload is a best-guess (standard UVC VideoStreaming button event) — verify by sniffing while pressing the button.",
               "capabilities": {
-                "button": { "method": "uvc-still-trigger", "endpoint": "0x81", "pressPayload": "02010001" }
+                "button": {
+                  "method": "uvc-still-trigger",
+                  "endpoint": "0x81",
+                  "pressPayload": "02010001"
+                }
               }
             }
           ]
@@ -75,7 +93,11 @@
               "enabled": false,
               "_comment": "UNSUPPORTED for now. Two clean USBPcap captures (5+ button presses each, camera streaming) showed ZERO interrupt traffic on 0x83 and no button data on the bus. Descriptor advertises bTriggerUsage=1 (host-side notification), so the device only emits the button event after an app arms the still-capture pin — plain preview streaming (getUserMedia) never arms it, so our passive out-of-band tap can't see it. Re-enable only after a vendor-app sniff confirms the real endpoint/payload, or after determining the button routes through one of its Extension Units ({28F03370-6311-4A2E-BA2C-6890EB334016} / {BD5321B4-D635-CA45-B203-4E0149B301BC}). endpoint/pressPayload below are unverified best-guesses.",
               "capabilities": {
-                "button": { "method": "uvc-still-trigger", "endpoint": "0x83", "pressPayload": "02010001" }
+                "button": {
+                  "method": "uvc-still-trigger",
+                  "endpoint": "0x83",
+                  "pressPayload": "02010001"
+                }
               }
             }
           ]

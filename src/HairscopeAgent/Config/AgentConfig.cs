@@ -59,7 +59,7 @@ public sealed class AgentSettings
 public sealed class WebSocketSettings
 {
     [JsonPropertyName("host")] public string Host { get; set; } = "127.0.0.1";
-    [JsonPropertyName("port")] public int Port { get; set; } = 8787;
+    [JsonPropertyName("port")] public int Port { get; set; } = 8891;
     /// <summary>Allowed browser Origin headers. Empty = allow any (dev only).</summary>
     [JsonPropertyName("allowedOrigins")] public List<string> AllowedOrigins { get; set; } = new();
 }
