@@ -4,7 +4,7 @@
 ; listener open and starts USB button capture only while the web app is connected.
 
 #define AppName "Hairscope Agent"
-#define AppVersion "1.0.8"
+#define AppVersion "1.0.9"
 #define AppPublisher "Hairscope"
 #define AppExeName "HairscopeAgent.exe"
 #define ServiceName "HairscopeAgent"
